@@ -157,18 +157,21 @@ def load_modules(path, known_modules):
         # Skip random python files that aren't part of the module
         if full_package_name not in known_modules:
             continue
+
         if full_package_name not in sys.modules:
             module = (importer.find_module(package_name)
                       .load_module(full_package_name))
-            print("Loading module: {}".format(module.__name__))
-            result[module.__name__] = module
+        else:
+            module = sys.modules[full_package_name]
+
+        print("Loading module: {}".format(module.__name__))
+        result[module.__name__] = module
     return result
 
 
 def build_module_dict(path):
     mod_space = enumerate_modules_in_dir(path)
     loader_dict = load_modules(path, mod_space.modules)
-
     return {
         k: ExpansionModule(k, mod_space.base_path, v)
         for k, v in loader_dict.items()
@@ -210,13 +213,14 @@ def render_block(block, modules) -> str:
     start_str = block_to_start_string(block)
 
     try:
-        exp_mod = modules[block.command]
+        exp_mod = modules[block.command.function]
     except KeyError:
         mod_dirs = [x.base_path for x in modules.values()]
         mod_dir_str = '\n'.format(['- {}'.format(x) for x in mod_dirs])
-        raise UnknownExpansionModule("Expansion module {} not found "
+        raise UnknownExpansionModule("Expansion module `{}` not found "
                                      "in any of the following directories: {}"
-                                     .format(block.command, mod_dir_str))
+                                     .format(block.command.function,
+                                             mod_dir_str))
 
     content = exp_mod.module.get_content(**block.command.args)
     if type(content) != dict:
@@ -236,13 +240,15 @@ def recombine(chunks, blocks) -> str:
     return '\n'.join(itertools.chain(*zip(chunks, blocks)))
 
 
-def expand_file(input_file_text: str, modules) -> str:
+def render_file(input_file_text: str, modules) -> str:
     blocks = extract_blocks(input_file_text)
     chunks = split_file_at_blocks(input_file_text, blocks)
 
     expanded_blocks = [render_block(x, modules) for x in blocks]
 
-    return recombine(chunks, expanded_blocks)
+    recombined_file = recombine(chunks, expanded_blocks)
+
+    return recombined_file
 
 
 def main(input_files, module_path, in_place=True, output_dir=None):

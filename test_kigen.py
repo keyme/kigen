@@ -35,6 +35,7 @@ This is just a test
 # KIGEN_start foo_func arg1:a arg2:b arg3:c
 # Yeah, just a comment
 # WOO!
+
 # KIGEN_end
 Some useless stuff
 // C style inline comments work too
@@ -141,7 +142,8 @@ class TestKiGen(unittest.TestCase):
     def test_command_round_trip(self):
         original = "# KIGEN_start foo arg1:a arg2:b"
         _, command = kigen.extract_command(original)
-        reconstructed = "# KIGEN_start {}".format(kigen.command_to_cmdstr(command))
+        reconstructed = ("# KIGEN_start {}"
+                         .format(kigen.command_to_cmdstr(command)))
         assert original == reconstructed
 
     def test_block_start_string(self):
@@ -163,3 +165,18 @@ class TestKiGen(unittest.TestCase):
 
         result = kigen.recombine(file_chunks, render_blocks)
         assert result.strip() == _test_block3.strip()
+
+    def test_render_file(self):
+        modules = kigen.build_module_dict(TEST_DATA_DIR)
+        autogen_file_path = os.path.join(TEST_DATA_DIR, 'file_to_autogen.rb')
+        compare_file_path = os.path.join(TEST_DATA_DIR, 'file_to_compare.rb')
+
+        with open(compare_file_path) as ifile:
+            compare_file_data = ifile.read()
+
+        with open(autogen_file_path) as ifile:
+            autogen_file_data = ifile.read()
+
+        expanded_autogen_file = kigen.render_file(autogen_file_data, modules)
+
+        assert expanded_autogen_file.strip() == compare_file_data.strip()

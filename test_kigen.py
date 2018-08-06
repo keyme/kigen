@@ -124,3 +124,19 @@ class TestKiGen(unittest.TestCase):
         module_names = kigen.enumerate_modules_in_dir(TEST_DATA_DIR)
         modules = kigen.load_modules(TEST_DATA_DIR, module_names)
         assert sorted(modules.keys()) == sorted(module_names)
+
+    def test_command_round_trip(self):
+        original = "# KIGEN_start foo arg1:a arg2:b"
+        _, command = kigen.extract_command(original)
+        reconstructed = "# KIGEN_start {}".format(kigen.command_to_cmdstr(command))
+        assert original == reconstructed
+
+    def test_block_start_string(self):
+        original = "# KIGEN_start foo arg1:a arg2:b\n# KIGEN_end"
+        blocks = kigen.extract_blocks(original)
+        assert len(blocks) == 1
+
+        boi = blocks[0]
+        start_str = kigen.block_to_start_string(boi)
+
+        assert start_str == "# KIGEN_start foo arg1:a arg2:b"

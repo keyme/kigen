@@ -151,6 +151,32 @@ def load_modules(path, known_modules):
     return result
 
 
+def command_to_cmdstr(command: ModuleCmd) -> str:
+    function = "{}".format(command.function)
+    arg_strs = []
+    for k, v in command.args.items():
+        arg_strs.append('{}:{}'.format(k, v))
+
+    return ' '.join([function] + arg_strs)
+
+
+def block_to_start_string(block) -> str:
+    cmd = block.command
+    result = "{} KIGEN_start {}".format(block.commentmark,
+                                        command_to_cmdstr(cmd))
+
+    return result
+
+
+def expand_block(block, modules) -> str:
+    return
+
+
+def expand_file(input_file_text: str, modules) -> str:
+    blocks = extract_blocks(input_file_text)
+    chunks = split_file_at_blocks(input_file_text, blocks)
+
+
 def main(input_file, module_path):
     pass
 

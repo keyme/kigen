@@ -119,3 +119,8 @@ class TestKiGen(unittest.TestCase):
     def test_basic_expansion(self):
         result = kigen.expand_template(_basic_template, _basic_args)
         assert result == _basic_expectation
+
+    def test_module_loading(self):
+        module_names = kigen.enumerate_modules_in_dir(TEST_DATA_DIR)
+        modules = kigen.load_modules(TEST_DATA_DIR, module_names)
+        assert sorted(modules.keys()) == sorted(module_names)

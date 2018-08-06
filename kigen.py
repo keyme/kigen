@@ -22,6 +22,11 @@ class DanglingBlockEnd(Exception):
     pass
 
 
+def expand_template(template_str, content):
+    template = jinja2.Template(template_str)
+    return template.render(**content)
+
+
 def split_marker(line) -> str:
     """Returns a tuple containing the comment marker (i.e. // or #) and a
     line absent the start marker and any preceeding comment indicators

@@ -90,6 +90,10 @@ _module_dir_data = {
     ]
 }
 
+_basic_template = "Hello {{ name }}"
+_basic_args = {'name': 'Larry'}
+_basic_expectation = "Hello Larry"
+
 
 class TestKiGen(unittest.TestCase):
     def test_block_extraction(self):
@@ -124,3 +128,7 @@ class TestKiGen(unittest.TestCase):
         blocks = kigen.extract_blocks(_test_block2)
         file_chunks = kigen.split_file_at_blocks(_test_block2, blocks)
         assert file_chunks == _test_block2_content
+
+    def test_basic_expansion(self):
+        result = kigen.expand_template(_basic_template, _basic_args)
+        assert result == _basic_expectation

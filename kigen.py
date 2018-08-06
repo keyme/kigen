@@ -124,7 +124,8 @@ def enumerate_modules_in_dir(path: str):
     """
     assert os.path.isdir(path)
 
-    files = [x for x in os.listdir(path) if os.path.isfile(x)]
+    files = [x for x in os.listdir(path)
+             if os.path.isfile(os.path.join(path, x))]
 
     py_files = [file_path_to_base(x)
                 for x in files if x.endswith('.py')]

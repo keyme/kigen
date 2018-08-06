@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 from unittest.mock import patch
 import unittest
 
@@ -74,15 +75,6 @@ _block_args = (
 )
 
 _module_dir_data = {
-    'fake_directory_listing': [
-        'foo.py',
-        'foo.jinja2',
-        'bar.py',
-        'bar.jinja2',
-        'baz.py',
-        'baz.jinja2',
-        'random_junk.exe'
-    ],
     'expected_modules': [
         'foo',
         'bar',
@@ -93,6 +85,8 @@ _module_dir_data = {
 _basic_template = "Hello {{ name }}"
 _basic_args = {'name': 'Larry'}
 _basic_expectation = "Hello Larry"
+
+TEST_DATA_DIR = os.path.join('.', 'test_collateral')
 
 
 class TestKiGen(unittest.TestCase):
@@ -108,15 +102,8 @@ class TestKiGen(unittest.TestCase):
             for arg in block.command.args:
                 assert block.command.args[arg] == _block_args[idx][arg]
 
-    @patch('os.path.isfile', autospec=True)
-    @patch('os.path.isdir', autospec=True)
-    @patch('os.listdir', autospec=True)
-    def test_module_extraction(self, listdir, isdir, isfile):
-        listdir.return_value = _module_dir_data['fake_directory_listing']
-        isdir.return_value = True
-        isfile.return_value = True
-
-        modules = kigen.enumerate_modules_in_dir('/fake/path/to/module')
+    def test_module_extraction(self):
+        modules = kigen.enumerate_modules_in_dir(TEST_DATA_DIR)
         assert sorted(modules) == sorted(_module_dir_data['expected_modules'])
 
     def test_split_at_blocks_lead_in(self):

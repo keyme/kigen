@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import collections
+import itertools
 import os
 import pkgutil
 import sys
@@ -12,6 +13,10 @@ STOP_MARKER = 'KIGEN_end'
 ModuleCmd = collections.namedtuple('ModuleCmd', 'function args')
 AutogenBlock = collections.namedtuple('AutogenBlock',
                                       'start end command commentmark')
+ModuleSpace = collections.namedtuple('ModuleSpace',
+                                     'base_path modules')
+ExpansionModule = collections.namedtuple('ExpansionModule',
+                                         'name base_path module')
 
 
 class NestedBlockError(Exception):
@@ -19,6 +24,14 @@ class NestedBlockError(Exception):
 
 
 class DanglingBlockEnd(Exception):
+    pass
+
+
+class UnknownExpansionModule(Exception):
+    pass
+
+
+class InvalidContent(Exception):
     pass
 
 
@@ -132,7 +145,8 @@ def enumerate_modules_in_dir(path: str):
     jinja_files = [file_path_to_base(x)
                    for x in files if x.endswith('.jinja2')]
 
-    return list(set(py_files).intersection(set(jinja_files)))
+    mod_list = list(set(py_files).intersection(set(jinja_files)))
+    return ModuleSpace(path, mod_list)
 
 
 # Adapted from https://stackoverflow.com/questions/1057431
@@ -149,6 +163,16 @@ def load_modules(path, known_modules):
             print("Loading module: {}".format(module.__name__))
             result[module.__name__] = module
     return result
+
+
+def build_module_dict(path):
+    mod_space = enumerate_modules_in_dir(path)
+    loader_dict = load_modules(path, mod_space.modules)
+
+    return {
+        k: ExpansionModule(k, mod_space.base_path, v)
+        for k, v in loader_dict.items()
+    }
 
 
 def command_to_cmdstr(command: ModuleCmd) -> str:
@@ -168,16 +192,60 @@ def block_to_start_string(block) -> str:
     return result
 
 
-def expand_block(block, modules) -> str:
-    return
+def block_to_end_string(block) -> str:
+    result = "{} KIGEN_end".format(block.commentmark)
+
+    return result
+
+
+def expansion_module_to_template(exp_mod) -> str:
+    path = os.path.join(exp_mod.base_path,
+                        '{}.jinja2'.format(exp_mod.name))
+
+    with open(path) as ifile:
+        return ifile.read()
+
+
+def render_block(block, modules) -> str:
+    start_str = block_to_start_string(block)
+
+    try:
+        exp_mod = modules[block.command]
+    except KeyError:
+        mod_dirs = [x.base_path for x in modules.values()]
+        mod_dir_str = '\n'.format(['- {}'.format(x) for x in mod_dirs])
+        raise UnknownExpansionModule("Expansion module {} not found "
+                                     "in any of the following directories: {}"
+                                     .format(block.command, mod_dir_str))
+
+    content = exp_mod.module.get_content(**block.command.args)
+    if type(content) != dict:
+        raise InvalidContent("get_content functions must return a dictionary!"
+                             "\nModule {} located in {} does not"
+                             .format(exp_mod.name, exp_mod.base_path))
+
+    template = expansion_module_to_template(exp_mod)
+
+    body = expand_template(template, content)
+    end_str = block_to_end_string(block)
+
+    return '\n'.join([start_str, body, end_str])
+
+
+def recombine(chunks, blocks) -> str:
+    return '\n'.join(itertools.chain(*zip(chunks, blocks)))
 
 
 def expand_file(input_file_text: str, modules) -> str:
     blocks = extract_blocks(input_file_text)
     chunks = split_file_at_blocks(input_file_text, blocks)
 
+    expanded_blocks = [render_block(x, modules) for x in blocks]
 
-def main(input_file, module_path):
+    return recombine(chunks, expanded_blocks)
+
+
+def main(input_files, module_path, in_place=True, output_dir=None):
     pass
 
 

@@ -136,10 +136,13 @@ def enumerate_modules_in_dir(path: str):
 
 
 # Adapted from https://stackoverflow.com/questions/1057431
-def load_modules(path):
+def load_modules(path, known_modules):
     result = {}
     for importer, package_name, _ in pkgutil.iter_modules([path]):
         full_package_name = '{}'.format(package_name)
+        # Skip random python files that aren't part of the module
+        if full_package_name not in known_modules:
+            continue
         if full_package_name not in sys.modules:
             module = (importer.find_module(package_name)
                       .load_module(full_package_name))

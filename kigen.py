@@ -194,7 +194,11 @@ def load_modules(path, known_modules):
             module = (importer.find_module(package_name)
                       .load_module(full_package_name))
         else:
-            module = sys.modules[full_package_name]
+            raise ModuleConflict(
+                "There is already a module named {} in sys.path. "
+                "Please rename this module"
+                .format(package_name)
+            )
 
         print("Loading module: {}".format(module.__name__))
         result[module.__name__] = module

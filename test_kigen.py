@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os
-from unittest.mock import patch
+import sys
 import unittest
 
 import kigen
@@ -104,6 +104,15 @@ TEST_DATA_DIR = os.path.join('.', 'test_collateral')
 
 
 class TestKiGen(unittest.TestCase):
+    def setUp(self):
+        self._starting_modules = list(sys.modules.keys())
+
+    def tearDown(self):
+        sysmod_keys = list(sys.modules.keys())
+        for key in sysmod_keys:
+            if key not in self._starting_modules:
+                sys.modules.pop(key)
+
     def test_block_extraction(self):
         blocks = kigen.extract_blocks(_test_block)
         assert len(blocks) == len(_block_positions)

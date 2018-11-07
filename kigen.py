@@ -12,7 +12,7 @@ import jinja2
 START_MARKER = 'KIGEN_start'
 STOP_MARKER = 'KIGEN_end'
 
-ModuleCmd = collections.namedtuple('ModuleCmd', 'function args')
+ModuleCmd = collections.namedtuple('ModuleCmd', 'module args')
 AutogenBlock = collections.namedtuple('AutogenBlock',
                                       'start end command commentmark')
 ModuleSpace = collections.namedtuple('ModuleSpace',
@@ -80,17 +80,18 @@ def extract_command(line):
     marker (`#`, `//`, etc) and a ModuleCmd object
 
     """
-    # Remove the marker leaving us with just a function and its
-    # (optional) arguments
+    # Remove the marker leaving us with just a module name and
+    # (optional) arguments.  This module's get_content function will
+    # ultimately be what is called with the (optional) arguments
     commentmarker, line = split_marker(line)
 
     # Remove any pesky whitespace
     line = line.strip()
 
-    function, *raw_args = line.split(' ')
+    module, *raw_args = line.split(' ')
     args = extract_args(raw_args)
 
-    return commentmarker, ModuleCmd(function, args)
+    return commentmarker, ModuleCmd(module, args)
 
 
 def extract_blocks(file_data):
@@ -220,12 +221,12 @@ def build_module_dict(path):
 def command_to_cmdstr(command):
     """ Renders a ModuleCmd as a string
     """
-    function = "{}".format(command.function)
+    module = "{}".format(command.module)
     arg_strs = []
     for k, v in command.args.items():
         arg_strs.append('{}:{}'.format(k, v))
 
-    return ' '.join([function] + arg_strs)
+    return ' '.join([module] + arg_strs)
 
 
 def block_to_start_string(block):
@@ -266,13 +267,13 @@ def render_block(block, modules):
     start_str = block_to_start_string(block)
 
     try:
-        exp_mod = modules[block.command.function]
+        exp_mod = modules[block.command.module]
     except KeyError:
         mod_dirs = [x.base_path for x in modules.values()]
         mod_dir_str = '\n'.format(['- {}'.format(x) for x in mod_dirs])
         raise UnknownExpansionModule("Expansion module `{}` not found "
                                      "in any of the following directories: {}"
-                                     .format(block.command.function,
+                                     .format(block.command.module,
                                              mod_dir_str))
 
     content = exp_mod.module.get_content(**block.command.args)

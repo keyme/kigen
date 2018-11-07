@@ -111,7 +111,7 @@ class TestKiGen(unittest.TestCase):
         for idx, block in enumerate(blocks):
             assert block.start == _block_positions[idx][0]
             assert block.end == _block_positions[idx][1]
-            assert block.command.function == _block_funcs[idx]
+            assert block.command.module == _block_funcs[idx]
             assert len(block.command.args) == len(_block_args[idx])
             for arg in block.command.args:
                 assert block.command.args[arg] == _block_args[idx][arg]
